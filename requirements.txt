@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 pdfplumber
-google-generativeai
+google-genai
 python-multipart
 resend
 python-dotenv
