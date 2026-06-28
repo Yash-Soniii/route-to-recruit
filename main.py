@@ -1,7 +1,6 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from google import genai
-
+from groq import Groq
 import pdfplumber
 import resend
 import io
@@ -19,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 resend.api_key = os.getenv("RESEND_API_KEY")
 
 @app.post("/extract-skills")
@@ -29,12 +28,16 @@ async def extract_skills(file: UploadFile = File(...)):
     with pdfplumber.open(io.BytesIO(contents)) as pdf:
         for page in pdf.pages:
             text += page.extract_text() or ""
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=f"Extract only technical skills, tools, technologies from this resume. Return comma separated list only:\n\n{text}"
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[{
+            "role": "user",
+            "content": f"Extract only technical skills, tools, technologies from this resume. Return comma separated list only, no explanation:\n\n{text}"
+        }]
     )
-    skills = [s.strip() for s in response.text.split(",")]
+    skills = [s.strip() for s in response.choices[0].message.content.split(",")]
     return {"skills": skills}
+
 @app.post("/send-alert")
 async def send_alert(data: dict):
     resend.Emails.send({
