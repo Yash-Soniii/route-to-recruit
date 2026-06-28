@@ -51,3 +51,16 @@ async def send_alert(data: dict):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.post("/extract-skills-text")
+async def extract_skills_text(data: dict):
+    text = data.get("text", "")
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[{
+            "role": "user",
+            "content": f"Extract only technical skills, tools, technologies from this resume. Return comma separated list only, no explanation:\n\n{text[:8000]}"
+        }]
+    )
+    skills = [s.strip() for s in response.choices[0].message.content.split(",")]
+    return {"skills": skills}
